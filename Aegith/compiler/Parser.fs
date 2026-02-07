@@ -36,7 +36,7 @@ type Parser() =
                             Type = "type_chan"
                             Line = pos.Line
                             Column = pos.Column
-                            Data = sprintf "[str: \"%s\"]" t
+                            Data = sprintf "[ref: %i]" t
                         }
                     )
             )
@@ -57,9 +57,9 @@ type Parser() =
                             Line = pos.Line
                             Column = pos.Column
                             Data = sprintf
-                                "[arr: [%s], str: \"%s\"]"
-                                (arg |> List.map (sprintf "str: \"%s\"") |> String.concat ", ")
-                                (match rettyp with | Some t -> t | None -> "")
+                                "[arr: [%s], ref: %i]"
+                                (arg |> List.map (sprintf "ref: %i") |> String.concat ", ")
+                                (match rettyp with | Some t -> t | None -> -1)
                         }
                     )
             )
@@ -72,7 +72,7 @@ type Parser() =
                             Type = "type"
                             Line = pos.Line
                             Column = pos.Column
-                            Data = sprintf "[str: \"%s\"]" t
+                            Data = sprintf "[ref: %i]" t
                         }
                     )
             )
@@ -411,16 +411,74 @@ type Parser() =
         typRef.Value <-
             choice [
                 attempt (
-                    pipe2
+                    pipe3
+                        getPosition
                         ident
                         (between
                             (spaces .>> pchar '<')
                             (pchar '>' .>> spaces)
                             (sepBy1 (spaces >>. typ) (spaces .>> pchar ','))
                         )
-                        (fun f s -> f + "<" + (String.concat "," s) + ">")
+                        (fun pos f g ->
+                            fast.add {
+                                Type = "type_g"
+                                Line = pos.Line
+                                Column = pos.Column
+                                Data = sprintf "[str: \"%s\", arr: [%s]]" f (g |> List.map (sprintf "ref: %i") |> String.concat ", ")
+                            }
+                        )
                 )
-                ident
+                attempt (
+                    pipe2
+                        getPosition
+                        (
+                            pstring "chan" .>> spaces1 >>. typ
+                        )
+                        (fun pos s ->
+                            fast.add {
+                                Type = "type_chan"
+                                Line = pos.Line
+                                Column = pos.Column
+                                Data = sprintf "[ref: %i]" s
+                            }
+                        )
+                )
+                attempt (
+                    pipe2
+                        getPosition
+                        (
+                            pstring "func"
+                            >>. between
+                                (spaces .>> pchar '(')
+                                (spaces .>> pchar ')')
+                                (sepBy (spaces >>. typ) (spaces .>> pchar ','))
+                            .>>. opt (attempt (spaces >>. typ .>> spaces))
+                        )
+                        (fun pos (arg, rettyp) ->
+                            fast.add {
+                                Type = "type_func"
+                                Line = pos.Line
+                                Column = pos.Column
+                                Data = sprintf
+                                    "[arr: [%s], ref: %i]"
+                                    (arg |> List.map (sprintf "ref: %i") |> String.concat ", ")
+                                    (match rettyp with | Some t -> t | None -> -1)
+                            }
+                        )
+                )
+                (
+                    pipe2
+                        getPosition
+                        ident
+                        (fun pos s ->
+                            fast.add {
+                                Type = "type_s"
+                                Line = pos.Line
+                                Column = pos.Column
+                                Data = sprintf "[str: \"%s\"]" s
+                            }
+                        )
+                )
             ]
         funcTermRef.Value <- choice [
             attempt (func_ .>> funcEndLines)
@@ -680,7 +738,7 @@ type Parser() =
                         )
                         (fun pos expr ->
                             fast.add {
-                                Type = "repo_move"
+                                Type = "give_repo"
                                 Line = pos.Line
                                 Column = pos.Column
                                 Data = sprintf "[ref: %i]" expr
@@ -697,7 +755,7 @@ type Parser() =
                         )
                         (fun pos expr ->
                             fast.add {
-                                Type = "com"
+                                Type = "com_ref"
                                 Line = pos.Line
                                 Column = pos.Column
                                 Data = sprintf "[ref: %i]" expr
