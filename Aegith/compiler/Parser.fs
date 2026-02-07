@@ -369,8 +369,42 @@ type Parser() =
                     (body |> List.map (sprintf "ref: %i") |> String.concat ", ")
             }
         )
+    /// <summary>
+    /// Left: false
+    /// Right: true
+    /// </summary>
     let oprators = [|
-        "=", 1
+        [|
+            "=", true
+        |]
+        [|
+            "||", false
+        |]
+        [|
+            "&&", false
+        |]
+        [|
+            "==", false
+            "!=", false
+            ">=", false
+            "<=", false
+            ">", false
+            "<", false
+        |]
+        [|
+            "+", false
+            "-", false
+        |]
+        [|
+            "*", false
+            "/", false
+        |]
+        [|
+            "**", true
+        |]
+        [|
+            ".", false
+        |]
     |]
 
     do
@@ -383,30 +417,25 @@ type Parser() =
             let op = InfixOperator(name, getPosition .>> spaces, prece, assoc, (), fun opPos lhs rhs -> mapping (adjustPosition -name.Length opPos) lhs rhs)
             opp.AddOperator op
         
-        addOpr "+" 1 Assoc.Left
-            (fun pos lhs rhs ->
-                fast.add {
-                    Type = "operator_add"
-                    Line = pos.Line
-                    Column = pos.Column
-                    Data = sprintf
-                        "[ref: %i, ref: %i]"
-                        lhs
-                        rhs
-                }
+        oprators
+        |> Array.iter (fun ops ->
+            ops
+            |> Array.iteri (fun i (name, assoc) ->
+                addOpr name (i + 1)
+                    (if assoc then Assoc.Right else Assoc.Left)
+                    (fun pos lhs rhs ->
+                        fast.add {
+                            Type = "operator_" + name
+                            Line = pos.Line
+                            Column = pos.Column
+                            Data = sprintf
+                                "[ref: %i, ref: %i]"
+                                lhs
+                                rhs
+                        }
+                    )
             )
-        addOpr "*" 2 Assoc.Left
-            (fun pos lhs rhs ->
-                fast.add {
-                    Type = "operator_mul"
-                    Line = pos.Line
-                    Column = pos.Column
-                    Data = sprintf
-                        "[ref: %i, ref: %i]"
-                        lhs
-                        rhs
-                }
-            )
+        )
 
         typRef.Value <-
             choice [
@@ -699,6 +728,38 @@ type Parser() =
                                                 Data = sprintf "[str: \"1\"]"
                                             }
                                     )
+                            }
+                        )
+                )
+                attempt (
+                    pipe2
+                        getPosition
+                        (
+                            ident
+                            .>>. between
+                                (spaces .>> pchar '(')
+                                (spaces .>> pchar ')')
+                                (sepBy (spaces >>. opp.ExpressionParser) (spaces .>> pchar ','))
+                        )
+                        (fun pos (name, args) ->
+                            fast.add {
+                                Type = "call_func"
+                                Line = pos.Line
+                                Column = pos.Column
+                                Data = sprintf "[str: \"%s\", arr: [%s]]" name (args |> List.map (sprintf "ref: %i") |> String.concat ", ")
+                            }
+                        )
+                )
+                attempt (
+                    pipe2
+                        getPosition
+                        ident
+                        (fun pos name ->
+                            fast.add {
+                                Type = "ident"
+                                Line = pos.Line
+                                Column = pos.Column
+                                Data = sprintf "[str: \"%s\"]" name
                             }
                         )
                 )

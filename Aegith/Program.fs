@@ -9,7 +9,7 @@ package main
 import std::fmt
 
 func main(*a: i32) {
-    let *a: Vec<_> = &1
+    let *a = 1.a + 3
 }
 "
     p.run input |> printfn "%A"
