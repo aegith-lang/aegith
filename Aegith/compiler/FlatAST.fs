@@ -107,6 +107,9 @@ type FlatAST() =
         then Err("FlatAST.Ast ->! Index Out Of Range.")
         else Ok(this.Ast[i])
 
+    member this.getData() =
+        this.Data
+
     member this.getData i =
         if i < 0 || this.Data.Length <= i
         then Err("FlatAST.Data ->! Index Out Of Range.")

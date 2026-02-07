@@ -130,7 +130,7 @@ type Parser() =
                         (match isMod with | Some v -> v | None -> false)
                         name
                         (match rettyp with | Some typ -> typ | None -> -1)
-                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "bool: %b, str: \"%s\", ref: %i" isrepo f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
+                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" isrepo f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
                         (content |> List.map (sprintf "ref: %i") |> String .concat ", ")
                 }
             )

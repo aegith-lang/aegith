@@ -3,7 +3,6 @@
 [<EntryPoint>]
 let main arv =
     let p = Parser()
-    let ti = TypeInferece()
     let input = @"
 package main
 import std::fmt
@@ -13,6 +12,8 @@ func main(*a: i32) {
 }
 "
     p.run input |> printfn "%A"
-    p.getFlatAST() |> printfn "%A"
-    p.getFlatAST() |> ti.setFlatAST
+    let fast = p.getFlatAST()
+    fast.initData()
+    fast |> printfn "%A"
+    let ti = TypeInferece(fast)
     0
