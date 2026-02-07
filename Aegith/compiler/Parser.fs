@@ -8,7 +8,7 @@ type Assoc = Associativity
 
 
 /// <summary>
-/// require type inference: "", -1
+/// require type inference: -1
 /// </summary>
 type Parser() =
     let fast = FlatAST()
@@ -471,7 +471,9 @@ type Parser() =
                         getPosition
                         ident
                         (fun pos s ->
-                            fast.add {
+                            if s = "_"
+                            then -1
+                            else fast.add {
                                 Type = "type_s"
                                 Line = pos.Line
                                 Column = pos.Column

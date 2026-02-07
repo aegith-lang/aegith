@@ -1,4 +1,6 @@
 namespace Aegith.Compiler
 
 type TypeInferece() =
-    class end
+    member val private FlatAST = None with get, set
+    member this.setFlatAST fast =
+        this.FlatAST <- Some fast
