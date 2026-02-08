@@ -2,7 +2,12 @@ namespace Aegith.Compiler
 
 open FParsec
 
-type ASTNode = { Type: string; Line: int64; Column: int64; Data: string }
+type ASTNode = {
+    Type: string;
+    Line: int64
+    Column: int64
+    mutable Data: string
+}
 
 exception FASTParseException of string
 
