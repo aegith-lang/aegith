@@ -7,7 +7,9 @@ let main arv =
 package main
 import std::fmt
 
-struct A {}
+struct A {
+    
+}
 "
     p.run input |> printfn "%A"
     let fast = p.getFlatAST()
