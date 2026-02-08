@@ -21,5 +21,5 @@ func main() {
     let fast = p.getFlatAST()
     //fast.initData()
     fast |> printfn "%A"
-    //let hmti = HMTypeInferece(fast)
+    //let hmti = HMTypeInference(fast)
     0
