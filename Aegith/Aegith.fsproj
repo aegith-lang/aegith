@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="compiler\parserlib\ParserModule.fs" />
     <Compile Include="compiler\FlatAST.fs" />
     <Compile Include="compiler\Parser.fs" />
     <Compile Include="compiler\TypeInference.fs" />

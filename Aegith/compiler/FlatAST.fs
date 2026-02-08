@@ -53,9 +53,9 @@ type FlatAST() =
             (pchar ']' .>> spaces)
             (sepBy
                 (choice [
-                    attempt bool_
-                    attempt str_
-                    attempt ref_
+                    bool_
+                    str_
+                    ref_
                     arr_
                 ])
                 (spaces .>> pchar ',' .>> spaces)
@@ -72,9 +72,9 @@ type FlatAST() =
                 (spaces .>> pchar ']' .>> spaces)
                 (sepBy
                     (choice [
-                        attempt bool_
-                        attempt str_
-                        attempt ref_
+                        bool_
+                        str_
+                        ref_
                         arr_
                     ])
                     (pchar ',' .>> spaces)

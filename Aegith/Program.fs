@@ -7,13 +7,19 @@ let main arv =
 package main
 import std::fmt
 
-func main(*a: i32) {
-    let *a = 1.a + 3
+func main() {
+    func f(x, y) {
+        func g(x, y) {
+            x + y
+        }
+        g(x, y)
+    }
+    f(1, 2)
 }
 "
     p.run input |> printfn "%A"
     let fast = p.getFlatAST()
-    fast.initData()
+    //fast.initData()
     fast |> printfn "%A"
-    let ti = TypeInferece(fast)
+    //let hmti = HMTypeInferece(fast)
     0

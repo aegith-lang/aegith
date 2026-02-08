@@ -27,55 +27,49 @@ type Parser() =
     
     let typp =
         choice [
-            attempt (
-                pipe2
-                    getPosition
-                    (pstring "chan" .>> spaces1 >>. typ)
-                    (fun pos t ->
-                        fast.add {
-                            Type = "type_chan"
-                            Line = pos.Line
-                            Column = pos.Column
-                            Data = sprintf "[ref: %i]" t
-                        }
-                    )
-            )
-            attempt (
-                pipe2
-                    getPosition
-                    (
-                        pstring "func"
-                        >>. between
-                            (spaces .>> pchar '(')
-                            (spaces .>> pchar ')')
-                            (sepBy (spaces >>. typ) (spaces .>> pchar ','))
-                        .>>. opt (attempt (spaces >>. typ .>> spaces))
-                    )
-                    (fun pos (arg, rettyp) ->
-                        fast.add {
-                            Type = "type_func"
-                            Line = pos.Line
-                            Column = pos.Column
-                            Data = sprintf
-                                "[arr: [%s], ref: %i]"
-                                (arg |> List.map (sprintf "ref: %i") |> String.concat ", ")
-                                (match rettyp with | Some t -> t | None -> -1)
-                        }
-                    )
-            )
-            (
-                pipe2
-                    getPosition
-                    typ
-                    (fun pos t ->
-                        fast.add {
-                            Type = "type"
-                            Line = pos.Line
-                            Column = pos.Column
-                            Data = sprintf "[ref: %i]" t
-                        }
-                    )
-            )
+            pipe2
+                getPosition
+                (pstring "chan" .>> spaces1 >>. typ)
+                (fun pos t ->
+                    fast.add {
+                        Type = "type_chan"
+                        Line = pos.Line
+                        Column = pos.Column
+                        Data = sprintf "[ref: %i]" t
+                    }
+                )
+            pipe2
+                getPosition
+                (
+                    pstring "func"
+                    >>. between
+                        (spaces .>> pchar '(')
+                        (spaces .>> pchar ')')
+                        (sepBy (spaces >>. typ) (spaces .>> pchar ','))
+                    .>>. opt (attempt (spaces >>. typ .>> spaces))
+                )
+                (fun pos (arg, rettyp) ->
+                    fast.add {
+                        Type = "type_func"
+                        Line = pos.Line
+                        Column = pos.Column
+                        Data = sprintf
+                            "[arr: [%s], ref: %i]"
+                            (arg |> List.map (sprintf "ref: %i") |> String.concat ", ")
+                            (match rettyp with | Some t -> t | None -> -1)
+                    }
+                )
+            pipe2
+                getPosition
+                typ
+                (fun pos t ->
+                    fast.add {
+                        Type = "type"
+                        Line = pos.Line
+                        Column = pos.Column
+                        Data = sprintf "[ref: %i]" t
+                    }
+                )
         ]
 
     let block p =
@@ -90,7 +84,7 @@ type Parser() =
             (many1 p)
     let blockOrExp p =
         choice [
-            attempt (block1 funcTerm)
+            block1 funcTerm
             spaces >>. p |>> (fun x -> [x])
         ]
 
@@ -106,12 +100,9 @@ type Parser() =
                     (spaces .>> pchar ')')
                     (sepBy
                         (
-                            choice [
-                                attempt (spaces >>. stringReturn "*" true .>> spaces)
-                                spaces >>% false
-                            ]
-                            .>>.
-                            ident
+                            spaces
+                            >>. opt (attempt (stringReturn "*" 0uy))
+                            .>>. ident
                             .>>. opt (attempt (spaces .>> pchar ':' .>> spaces >>. typp))
                         )
                         (spaces .>> pchar ',')
@@ -130,7 +121,7 @@ type Parser() =
                         (match isMod with | Some v -> v | None -> false)
                         name
                         (match rettyp with | Some typ -> typ | None -> -1)
-                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" isrepo f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
+                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" (match isrepo with | Some _ -> true | None -> false) f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
                         (content |> List.map (sprintf "ref: %i") |> String .concat ", ")
                 }
             )
@@ -178,12 +169,12 @@ type Parser() =
             (pstring "let"
                 .>> spaces1
                 >>. choice [
-                    attempt (stringReturn "mut" true)
+                    stringReturn "mut" true
                     pstring "" >>% false
                 ]
                 .>> spaces
                 .>>. choice [
-                    attempt (stringReturn "*" true .>> spaces)
+                    stringReturn "*" true .>> spaces
                     pstring "" >>% false
                 ]
                 .>>. ident
@@ -352,10 +343,9 @@ type Parser() =
         spaces
         >>. package_
         .>>. many import_
-        .>>. many (choice [
-            attempt func_
-            attempt struct_
-            protocol_
+        .>>. many (achoice protocol_ [
+            func_
+            struct_
         ]) .>> eof
         |>> (fun ((package, imports), body) ->
             fast.add {
@@ -438,8 +428,23 @@ type Parser() =
         )
 
         typRef.Value <-
-            choice [
-                attempt (
+            achoice
+                (
+                    pipe2
+                        getPosition
+                        ident
+                        (fun pos s ->
+                            if s = "_"
+                            then -1
+                            else fast.add {
+                                Type = "type_s"
+                                Line = pos.Line
+                                Column = pos.Column
+                                Data = sprintf "[str: \"%s\"]" s
+                            }
+                        )
+                )
+                [
                     pipe3
                         getPosition
                         ident
@@ -456,8 +461,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%s\", arr: [%s]]" f (g |> List.map (sprintf "ref: %i") |> String.concat ", ")
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (
@@ -471,8 +474,6 @@ type Parser() =
                                 Data = sprintf "[ref: %i]" s
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (
@@ -494,40 +495,41 @@ type Parser() =
                                     (match rettyp with | Some t -> t | None -> -1)
                             }
                         )
-                )
+                ]
+        funcTermRef.Value <- achoice
+            opp.ExpressionParser [
+            func_ .>> funcEndLines
+            let_ .>> endLines
+            async_ .>> endLines
+        ] .>> endLines
+        structTermRef.Value <- achoice
+            (func_st .>> funcEndLines) [
+            val_st .>> endLines
+        ]
+        protocolTermRef.Value <- achoice
+            (func_pr .>> funcEndLines) [
+            val_pr .>> endLines
+        ]
+        exprTermref.Value <-
+            achoice
                 (
                     pipe2
                         getPosition
-                        ident
-                        (fun pos s ->
-                            if s = "_"
-                            then -1
-                            else fast.add {
-                                Type = "type_s"
+                        (
+                            pchar '&'
+                            .>> spaces
+                            >>. exprTerm
+                        )
+                        (fun pos expr ->
+                            fast.add {
+                                Type = "com_ref"
                                 Line = pos.Line
                                 Column = pos.Column
-                                Data = sprintf "[str: \"%s\"]" s
+                                Data = sprintf "[ref: %i]" expr
                             }
                         )
                 )
-            ]
-        funcTermRef.Value <- choice [
-            attempt (func_ .>> funcEndLines)
-            attempt (let_ .>> endLines)
-            attempt (async_ .>> endLines)
-            opp.ExpressionParser
-        ] .>> endLines
-        structTermRef.Value <- choice [
-            attempt (val_st .>> endLines)
-            func_st .>> funcEndLines
-        ]
-        protocolTermRef.Value <- choice [
-            attempt (val_pr .>> endLines)
-            func_pr .>> funcEndLines
-        ]
-        exprTermref.Value <-
-            choice [
-                attempt (
+                [
                     pipe2
                         getPosition
                         (pfloat .>> (pchar 'f' <|> pchar 'F'))
@@ -539,8 +541,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%f\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (pint32 .>> opt (attempt (pchar 'l')))
@@ -552,8 +552,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (pint64 .>> attempt (pchar 'L'))
@@ -565,8 +563,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (puint32 .>> pchar 'u')
@@ -578,8 +574,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (puint64 .>> pstring "UL")
@@ -591,8 +585,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (pint16 .>> pchar 's')
@@ -604,8 +596,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (puint16 .>> pstring "us")
@@ -617,8 +607,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (pint8 .>> pchar 'y')
@@ -630,8 +618,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (puint8 .>> pstring "uy")
@@ -643,8 +629,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%i\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (between (pchar '"') (pchar '"') (manyStrings (regex @"\\?.")))
@@ -656,8 +640,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%s\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (between (pchar '\'') (pchar '\'') (regex @"\\?."))
@@ -669,8 +651,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%s\"]" value
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (
@@ -695,9 +675,6 @@ type Parser() =
                                     (content |> List.map (sprintf "ref: %i") |> String.concat ", ")
                             }
                         )
-
-                )
-                attempt (
                     pipe2
                         getPosition
                         (
@@ -730,8 +707,6 @@ type Parser() =
                                     )
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (
@@ -749,8 +724,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%s\", arr: [%s]]" name (args |> List.map (sprintf "ref: %i") |> String.concat ", ")
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         ident
@@ -762,8 +735,6 @@ type Parser() =
                                 Data = sprintf "[str: \"%s\"]" name
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (between (pchar '(' .>> spaces) (spaces .>> pchar ')') opp.ExpressionParser)
@@ -775,8 +746,6 @@ type Parser() =
                                 Data = sprintf "[ref: %i]" expr
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (block1 funcTerm)
@@ -790,8 +759,6 @@ type Parser() =
                                     (content |> List.map (sprintf "ref: %i") |> String.concat ", ")
                             }
                         )
-                )
-                attempt (
                     pipe2
                         getPosition
                         (
@@ -807,26 +774,8 @@ type Parser() =
                                 Data = sprintf "[ref: %i]" expr
                             }
                         )
-                )
-                (
-                    pipe2
-                        getPosition
-                        (
-                            pchar '&'
-                            .>> spaces
-                            >>. exprTerm
-                        )
-                        (fun pos expr ->
-                            fast.add {
-                                Type = "com_ref"
-                                Line = pos.Line
-                                Column = pos.Column
-                                Data = sprintf "[ref: %i]" expr
-                            }
-                        )
-                )
-            ]
-            .>> spaces
+                ]
+                .>> spaces
 
     member _.Struct = struct_
 
