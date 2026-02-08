@@ -9,12 +9,16 @@
     <Compile Include="compiler\parserlib\ParserModule.fs" />
     <Compile Include="compiler\FlatAST.fs" />
     <Compile Include="compiler\Parser.fs" />
-    <Compile Include="compiler\TypeInference.fs" />
+    <Compile Include="compiler\HMTypeInference.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FParsec" Version="1.1.1" />
+    <PackageReference Include="FParsec-Big-Data-Edition" Version="1.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="guarantee_system\" />
   </ItemGroup>
 
 </Project>
