@@ -7,15 +7,7 @@ let main arv =
 package main
 import std::fmt
 
-func main() {
-    func f(x, y) {
-        func g(x, y) {
-            x + y
-        }
-        g(x, y)
-    }
-    f(1, 2)
-}
+struct A {}
 "
     p.run input |> printfn "%A"
     let fast = p.getFlatAST()

@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="guarantee_system\Structure.fs" />
     <Compile Include="compiler\parserlib\ParserModule.fs" />
     <Compile Include="compiler\FlatAST.fs" />
     <Compile Include="compiler\Parser.fs" />
@@ -15,10 +16,6 @@
 
   <ItemGroup>
     <PackageReference Include="FParsec-Big-Data-Edition" Version="1.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="guarantee_system\" />
   </ItemGroup>
 
 </Project>

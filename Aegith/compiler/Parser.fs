@@ -291,13 +291,15 @@ type Parser() =
             (opt (attempt (stringReturn "pub" true .>> spaces1)))
             (pstring "struct" .>> spaces1
                 >>. ident
-                .>>. opt
-                    (spaces1
-                        .>> pstring "impl"
-                        .>> spaces
-                        >>. ident
-                        .>>. opt (attempt (many (spaces .>> pchar ',' .>> spaces >>. ident)))
+                .>>. opt (
+                    attempt (
+                        spaces1
+                            .>> pstring "impl"
+                            .>> spaces
+                            >>. ident
+                            .>>. opt (attempt (many (spaces .>> pchar ',' .>> spaces >>. ident)))
                     )
+                )
                 .>>. block
                     structTerm
                 .>> stEndLines
