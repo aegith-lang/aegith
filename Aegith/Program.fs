@@ -8,7 +8,7 @@ package main
 import std::fmt
 
 struct A {
-    
+    init new() {@}
 }
 "
     p.run input |> printfn "%A"

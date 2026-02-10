@@ -261,6 +261,39 @@ type Parser() =
     let func_ = func_base "" "pub"
     let func_st = func_base "struct" "pub"
     let func_pr = func_base "protocol" "abs"
+    let initf =
+        pipe2
+            getPosition
+            (opt (stringReturn "pub" true .>> spaces1) .>> pstring "init" .>> spaces1
+                .>>. ident
+                .>>. between
+                    (spaces .>> pchar '(')
+                    (spaces .>> pchar ')')
+                    (sepBy
+                        (
+                            spaces
+                            >>. opt (attempt (stringReturn "*" 0uy))
+                            .>>. ident
+                            .>>. opt (attempt (spaces .>> pchar ':' .>> spaces >>. typp))
+                        )
+                        (spaces .>> pchar ',')
+                    )
+                .>>. block1 (pstring "@" >>% -1)   // ToDO
+                .>> funcEndLines
+            )
+            (fun pos (((isMod, name), args), content) ->
+                fast.add {
+                    Type = "init"
+                    Line = pos.Line
+                    Column = pos.Column
+                    Data = sprintf
+                        "[bool: %b, str: \"%s\", arr: [%s], arr[%s]]"
+                        (match isMod with | Some v -> v | None -> false)
+                        name
+                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" (match isrepo with | Some _ -> true | None -> false) f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
+                        (content |> List.map (sprintf "ref: %i") |> String .concat ", ")
+                }
+            )
 
     let async_ =
         pipe2
@@ -507,6 +540,7 @@ type Parser() =
         structTermRef.Value <- achoice
             (func_st .>> funcEndLines) [
             val_st .>> endLines
+            initf .>> funcEndLines
         ]
         protocolTermRef.Value <- achoice
             (func_pr .>> funcEndLines) [
