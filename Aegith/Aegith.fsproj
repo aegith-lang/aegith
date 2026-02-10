@@ -11,6 +11,7 @@
     <Compile Include="compiler\FlatAST.fs" />
     <Compile Include="compiler\Parser.fs" />
     <Compile Include="compiler\HMTypeInference.fs" />
+    <Compile Include="under_test\parser\SliceParser.fs" />
     <Compile Include="guarantee_system\Structure.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -18,5 +19,7 @@
   <ItemGroup>
     <PackageReference Include="FParsec" Version="1.1.1" />
   </ItemGroup>
+
+  <ItemGroup />
 
 </Project>
