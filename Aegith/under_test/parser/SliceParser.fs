@@ -1,1 +1,0 @@
-namespace Aegith.Test.SliceParser
