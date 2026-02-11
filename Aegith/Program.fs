@@ -1,7 +1,5 @@
 ﻿open Aegith.Compiler
 
-#region "a"
-
 [<EntryPoint>]
 let main arv =
     let p = Parser()
@@ -19,5 +17,3 @@ struct A {
     fast |> printfn "%A"
     //let hmti = HMTypeInference(fast)
     0
-
-#ednregion
