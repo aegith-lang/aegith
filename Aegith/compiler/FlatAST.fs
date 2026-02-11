@@ -87,19 +87,19 @@ type FlatAST() =
             .>> spaces
             |>> box
 
-    member val private Ast = [||] with get, set
+    member val private AST = [||] with get, set
     member val private Data = [||] with get, set
 
     override this.ToString (): string = 
-        sprintf "FlatAST:\n%s\n\n" (this.Ast |> Array.mapi (sprintf "[ %i ]: %A\n") |> String.concat "\n")
+        sprintf "FlatAST:\n%s\n\n" (this.AST |> Array.mapi (sprintf "[ %i ]: %A\n") |> String.concat "\n")
 
     member this.add(ast) =
-        this.Ast <- [|ast|] |> Array.append this.Ast
-        this.Ast.Length - 1
+        this.AST <- [|ast|] |> Array.append this.AST
+        this.AST.Length - 1
 
     member this.initData() =
         this.Data <-
-            this.Ast
+            this.AST
             |> Array.map
                 (fun ast ->
                     match run program ast.Data with
@@ -107,10 +107,13 @@ type FlatAST() =
                     | Failure(msg, _, _) -> failwith <| sprintf "FlatAST.Data ->! Failured Parse.\n%s" msg
                 )
 
-    member this.getAst i =
-        if i < 0 || this.Ast.Length <= i
+    member this.getAST() =
+        this.AST
+
+    member this.getAST i =
+        if i < 0 || this.AST.Length <= i
         then Err("FlatAST.Ast ->! Index Out Of Range.")
-        else Ok(this.Ast[i])
+        else Ok(this.AST[i])
 
     member this.getData() =
         this.Data

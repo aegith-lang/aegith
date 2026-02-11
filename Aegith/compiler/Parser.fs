@@ -83,49 +83,12 @@ type Parser() =
             (spaces .>> pchar '}' .>> spaces)
             (many1 p)
     let blockOrExp p =
-        choice [
+        achoice (spaces >>. p |>> (fun x -> [x])) [
             block1 funcTerm
-            spaces >>. p |>> (fun x -> [x])
         ]
 
     let opp = OperatorPrecedenceParser()
     
-    let func_base typ modi =
-        pipe2
-            getPosition
-            (opt (stringReturn modi true .>> spaces1) .>> pstring "func" .>> spaces1
-                .>>. ident
-                .>>. between
-                    (spaces .>> pchar '(')
-                    (spaces .>> pchar ')')
-                    (sepBy
-                        (
-                            spaces
-                            >>. opt (attempt (stringReturn "*" 0uy))
-                            .>>. ident
-                            .>>. opt (attempt (spaces .>> pchar ':' .>> spaces >>. typp))
-                        )
-                        (spaces .>> pchar ',')
-                    )
-                .>>. opt (attempt (spaces >>. typp .>> spaces))
-                .>>. block1 funcTerm
-                .>> funcEndLines
-            )
-            (fun pos ((((isMod, name), args), rettyp), content) ->
-                fast.add {
-                    Type = sprintf "func%s" (match typ with | "" -> "" | s -> "_" + s)
-                    Line = pos.Line
-                    Column = pos.Column
-                    Data = sprintf
-                        "[bool: %b, str: \"%s\", ref: %i, arr: [%s], arr[%s]]"
-                        (match isMod with | Some v -> v | None -> false)
-                        name
-                        (match rettyp with | Some typ -> typ | None -> -1)
-                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" (match isrepo with | Some _ -> true | None -> false) f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
-                        (content |> List.map (sprintf "ref: %i") |> String .concat ", ")
-                }
-            )
-
     let package_ =
         pipe2
             getPosition
@@ -258,9 +221,111 @@ type Parser() =
                 }
             )
 
-    let func_ = func_base "" "pub"
-    let func_st = func_base "struct" "pub"
-    let func_pr = func_base "protocol" "abs"
+    let func_ =
+        pipe2
+            getPosition
+            (opt (stringReturn "pub" true .>> spaces1) .>> pstring "func" .>> spaces1
+                .>>. ident
+                .>>. between
+                    (spaces .>> pchar '(')
+                    (spaces .>> pchar ')')
+                    (sepBy
+                        (
+                            spaces
+                            >>. opt (attempt (stringReturn "*" 0uy))
+                            .>>. ident
+                            .>>. opt (attempt (spaces .>> pchar ':' .>> spaces >>. typp))
+                        )
+                        (spaces .>> pchar ',')
+                    )
+                .>>. opt (attempt (spaces >>. typp .>> spaces))
+                .>>. block1 funcTerm
+                .>> funcEndLines
+            )
+            (fun pos ((((isMod, name), args), rettyp), content) ->
+                fast.add {
+                    Type = "func"
+                    Line = pos.Line
+                    Column = pos.Column
+                    Data = sprintf
+                        "[bool: %b, str: \"%s\", ref: %i, arr: [%s], arr[%s]]"
+                        (match isMod with | Some v -> v | None -> false)
+                        name
+                        (match rettyp with | Some typ -> typ | None -> -1)
+                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" (match isrepo with | Some _ -> true | None -> false) f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
+                        (content |> List.map (sprintf "ref: %i") |> String .concat ", ")
+                }
+            )
+    let func_st =
+        pipe2
+            getPosition
+            (opt (stringReturn "pub" true .>> spaces1) .>> pstring "func" .>> spaces1
+                .>>. ident
+                .>>. between
+                    (spaces .>> pchar '(')
+                    (spaces .>> pchar ')')
+                    (sepBy
+                        (
+                            spaces
+                            >>. opt (attempt (stringReturn "*" 0uy))
+                            .>>. ident
+                            .>>. opt (attempt (spaces .>> pchar ':' .>> spaces >>. typp))
+                        )
+                        (spaces .>> pchar ',')
+                    )
+                .>>. opt (attempt (spaces >>. typp .>> spaces))
+                .>>. block1 funcTerm
+                .>> funcEndLines
+            )
+            (fun pos ((((isMod, name), args), rettyp), content) ->
+                fast.add {
+                    Type = "func_st"
+                    Line = pos.Line
+                    Column = pos.Column
+                    Data = sprintf
+                        "[bool: %b, str: \"%s\", ref: %i, arr: [%s], arr[%s]]"
+                        (match isMod with | Some v -> v | None -> false)
+                        name
+                        (match rettyp with | Some typ -> typ | None -> -1)
+                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" (match isrepo with | Some _ -> true | None -> false) f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
+                        (content |> List.map (sprintf "ref: %i") |> String .concat ", ")
+                }
+            )
+    let func_pr =
+        pipe2
+            getPosition
+            (opt (stringReturn "abs" true .>> spaces1) .>> pstring "func" .>> spaces1
+                .>>. ident
+                .>>. between
+                    (spaces .>> pchar '(')
+                    (spaces .>> pchar ')')
+                    (sepBy
+                        (
+                            spaces
+                            >>. opt (attempt (stringReturn "*" 0uy))
+                            .>>. ident
+                            .>>. opt (attempt (spaces .>> pchar ':' .>> spaces >>. typp))
+                        )
+                        (spaces .>> pchar ',')
+                    )
+                .>>. opt (attempt (spaces >>. typp .>> spaces))
+                .>>. block1 funcTerm
+                .>> funcEndLines
+            )
+            (fun pos ((((isMod, name), args), rettyp), content) ->
+                fast.add {
+                    Type = "func_pr"
+                    Line = pos.Line
+                    Column = pos.Column
+                    Data = sprintf
+                        "[bool: %b, str: \"%s\", ref: %i, arr: [%s], arr[%s]]"
+                        (match isMod with | Some v -> v | None -> false)
+                        name
+                        (match rettyp with | Some typ -> typ | None -> -1)
+                        (args |> List.map (fun ((isrepo, f), s) -> sprintf "arr: [bool: %b, str: \"%s\", ref: %i]" (match isrepo with | Some _ -> true | None -> false) f (match s with | Some i -> i | None -> -1)) |> String.concat ", ")
+                        (content |> List.map (sprintf "ref: %i") |> String .concat ", ")
+                }
+            )
     let initf =
         pipe2
             getPosition
