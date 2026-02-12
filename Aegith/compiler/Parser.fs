@@ -12,6 +12,7 @@ type Assoc = Associativity
 /// </summary>
 type Parser() =
     let fast = FlatAST()
+    let ss = SimpleScope()
 
     let endLines = many (newline <|> pchar ';')
     let funcEndLines = many newline
@@ -86,6 +87,8 @@ type Parser() =
         achoice (spaces >>. p |>> (fun x -> [x])) [
             block1 funcTerm
         ]
+
+    let variable = ident
 
     let opp = OperatorPrecedenceParser()
     
@@ -825,6 +828,7 @@ type Parser() =
                                 Data = sprintf "[str: \"%s\", arr: [%s]]" name (args |> List.map (sprintf "ref: %i") |> String.concat ", ")
                             }
                         )
+                    variable
                     pipe2
                         getPosition
                         ident

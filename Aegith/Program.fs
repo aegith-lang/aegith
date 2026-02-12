@@ -1,4 +1,5 @@
 ﻿open Aegith.Compiler
+open FParsec
 
 [<EntryPoint>]
 let main arv =
@@ -11,9 +12,5 @@ struct A {
     init new() {@}
 }
 "
-    p.run input |> printfn "%A"
-    let fast = p.getFlatAST()
-    //fast.initData()
-    fast |> printfn "%A"
-    //let hmti = HMTypeInference(fast)
+    
     0
