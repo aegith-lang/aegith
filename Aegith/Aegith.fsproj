@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="files\ReadFile.fs" />
+    <Compile Include="compiler\parserlib\ParserModule.fs" />
+    <Compile Include="compiler\FlatAST.fs" />
+    <Compile Include="compiler\Parser.fs" />
+    <Compile Include="compiler\TypeInference.fs" />
+    <Compile Include="under_test\parser\SliceParser.fs" />
+    <Compile Include="guarantee_system\Structure.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FParsec" Version="1.1.1" />
+  </ItemGroup>
+
+  <ItemGroup />
+
+</Project>
